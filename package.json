@@ -1,0 +1,36 @@
+{
+  "name": "htmx-demo",
+  "version": "0.0.1",
+  "description": "A modern, full-stack, zero-compile application with Hono + htmx 4 on Cloudflare Workers",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "mise run dev",
+    "build": "mise run build",
+    "deploy": "mise run deploy",
+    "type-check": "mise run type-check",
+    "format": "mise run format",
+    "lint": "mise run lint",
+    "setup": "mise run setup"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^4.20240620.0",
+    "chanfana": "^3.4.0",
+    "hono": "^4.13.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "daisyui": "^5.7.18",
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "typescript-eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.2.0",
+    "wrangler": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

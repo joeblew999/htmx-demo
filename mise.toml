@@ -1,0 +1,125 @@
+[env]
+# Deliberately no NODE_ENV. Wrangler injects `process.env.NODE_ENV` into the bundle itself,
+# defaulting to "development" for `dev` and "production" for `deploy`. Pinning it here would
+# leak "development" into production deploys. Let Wrangler decide per command.
+SKILLS_DIR = ".github/skills"
+# Claude Code only discovers skills at .claude/skills/<name>/SKILL.md. The setup task
+# symlinks that layout onto SKILLS_DIR so one vendored copy serves both Copilot and Claude.
+CLAUDE_SKILLS_DIR = ".claude/skills"
+
+[tools]
+# Node, not Bun. Cloudflare does not support Bun as Wrangler's host: `wrangler dev`
+# detects it and aborts with "Wrangler does not support the Bun runtime".
+# Wrangler itself requires Node >= 22 (hardcoded in its bin).
+node = "24"
+aube = "latest"
+# Secrets. Supplies CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID from the macOS
+# keychain — see fnox.toml. Anything touching the Cloudflare API runs under
+# `fnox exec --` so no token is ever written to a file or shell history.
+fnox = "latest"
+# No `wrangler` here: mise would install it via the npm: backend, duplicating the
+# devDependency and drifting from the version in aube-lock.yaml. It is invoked as
+# `npx wrangler` from the tasks below.
+
+[tasks]
+# Development server (with Node)
+dev.run = "npx wrangler dev"
+dev.description = "Start local dev server with Cloudflare Workers"
+
+# Setup: install deps + fetch htmx 4 skills
+setup.run = """
+  set -e
+  echo "📦 Installing dependencies..."
+  rm -rf node_modules
+  aube install
+  
+  echo ""
+  HTMX_REPO_URL="https://github.com/bigskysoftware/htmx.git"
+  HTMX_SKILLS_SOURCE="src/skills"
+  HTMX_CACHE_DIR="$HOME/.cache/htmx-repo"
+  
+  # Remove existing skills for idempotency
+  if [ -d "$SKILLS_DIR" ]; then
+    rm -rf "$SKILLS_DIR"
+    echo "🗑️  Removed existing $SKILLS_DIR"
+  fi
+  
+  mkdir -p "$SKILLS_DIR"
+  echo "📁 Created fresh $SKILLS_DIR directory"
+  
+  # Clone or update htmx repository
+  if [ -d "$HTMX_CACHE_DIR/.git" ]; then
+    echo "📥 Fetching latest htmx 4 (four-dev branch) from cache..."
+    cd "$HTMX_CACHE_DIR"
+    git fetch origin four-dev
+    git checkout four-dev
+    git pull origin four-dev
+    cd - > /dev/null
+  else
+    echo "📥 Cloning htmx 4 repository (four-dev branch)..."
+    mkdir -p "$HTMX_CACHE_DIR"
+    git clone --branch four-dev "$HTMX_REPO_URL" "$HTMX_CACHE_DIR"
+  fi
+  
+  if [ -d "$HTMX_CACHE_DIR/$HTMX_SKILLS_SOURCE" ]; then
+    cp -r "$HTMX_CACHE_DIR/$HTMX_SKILLS_SOURCE"/* "$SKILLS_DIR/"
+    echo "✅ htmx 4 skills fetched successfully to $SKILLS_DIR"
+  else
+    echo "❌ Could not find $HTMX_SKILLS_SOURCE in htmx repository"
+    exit 1
+  fi
+
+  # Copilot reads flat .md files from .github/skills; Claude Code only discovers
+  # .claude/skills/<name>/SKILL.md. Symlink rather than copy so there is exactly
+  # one source of truth and the two can never drift.
+  echo ""
+  rm -rf "$CLAUDE_SKILLS_DIR"
+  mkdir -p "$CLAUDE_SKILLS_DIR"
+  for f in "$SKILLS_DIR"/*.md; do
+    [ -e "$f" ] || continue
+    name=$(basename "$f" .md)
+    mkdir -p "$CLAUDE_SKILLS_DIR/$name"
+    # ../../../ climbs <name>/ -> skills/ -> .claude/ -> repo root
+    ln -sf "../../../$SKILLS_DIR/$name.md" "$CLAUDE_SKILLS_DIR/$name/SKILL.md"
+  done
+  echo "🔗 Linked $(ls "$CLAUDE_SKILLS_DIR" | wc -l | tr -d ' ') skills into $CLAUDE_SKILLS_DIR"
+  ls "$CLAUDE_SKILLS_DIR"
+
+  echo ""
+  echo "✨ Setup complete! Ready to develop."
+"""
+setup.description = "Setup: install dependencies + fetch htmx 4 skills"
+
+# Build for production
+# NOTE: not `wrangler build` — that is the framework-autodetect command and it rejects Hono.
+# A dry-run deploy is the real "does this bundle?" check.
+build.run = "npx wrangler deploy --dry-run --outdir dist"
+build.description = "Build for production deployment (dry-run bundle)"
+
+# Deploy to Cloudflare Workers.
+# `fnox exec --` injects the CF creds from the keychain for this process only.
+deploy.run = "fnox exec -- npx wrangler deploy"
+deploy.description = "Deploy to Cloudflare Workers"
+
+# Confirm the keychain creds resolve and point at the expected account.
+# Run this first if a deploy or d1 task fails with an auth error.
+cf-whoami.run = "fnox exec -- npx wrangler whoami"
+cf-whoami.description = "Show which Cloudflare account the fnox creds resolve to"
+
+# One-time: provision the D1 database, then paste the printed id into
+# wrangler.jsonc as `database_id`. Creates a real resource on the account.
+d1-create.run = "fnox exec -- npx wrangler d1 create htmx-demo"
+d1-create.description = "Create the D1 database (one-time; then update wrangler.jsonc)"
+
+# Type check (no emit — Wrangler strips types at deploy time)
+type-check.run = "npx tsc --noEmit"
+type-check.description = "Type check the source without emitting output"
+
+# Format
+format.run = "npx prettier --write ."
+format.description = "Format source files with Prettier"
+
+# Lint
+lint.run = "npx eslint ."
+lint.description = "Lint source files with ESLint"
+

@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "htmx-demo",
+  "main": "src/index.ts",
+  // Pinned to the workerd build shipped with wrangler 4.123.0. Raising this past the
+  // installed workerd's date makes `wrangler dev` refuse to start.
+  "compatibility_date": "2026-08-11",
+
+  // Deliberately no "nodejs_compat" flag — see AGENTS.md rule 6a. Hono and Chanfana
+  // run on the bare workerd runtime; if something ever seems to need this flag, the
+  // dependency is wrong, not the config.
+
+  "observability": { "enabled": true },
+
+  // Lets `import layout from "./templates/layout.html"` work with zero build step.
+  // This is the mechanism AGENTS.md requires for keeping markup out of TypeScript.
+  "rules": [{ "type": "Text", "globs": ["**/*.html"], "fallthrough": true }],
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "htmx-demo",
+      // Placeholder. `wrangler dev` creates a local SQLite file and ignores this.
+      // Before the first real deploy: `wrangler d1 create htmx-demo` and paste the id.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+    },
+  ],
+}

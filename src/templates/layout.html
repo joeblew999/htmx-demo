@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>%title%</title>
+
+    <!-- Tailwind v4 + daisyUI 5, pure CSS. No hydration, no client framework. -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@5/daisyui.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+
+    <!-- htmx 4 (beta). Pinned to the tag; do not float this to latest. -->
+    <script src="https://cdn.jsdelivr.net/gh/bigskysoftware/htmx@v4.0.0-beta6/dist/htmx.min.js"></script>
+  </head>
+
+  <body class="min-h-screen bg-base-200">
+    <main class="mx-auto flex max-w-2xl flex-col gap-6 p-8">
+      <header class="flex items-baseline justify-between">
+        <h1 class="text-3xl font-bold">%title%</h1>
+        <a class="link link-hover text-sm opacity-70" href="/api"
+          >OpenAPI docs</a
+        >
+      </header>
+
+      <section class="card bg-base-100 shadow-sm">
+        <div class="card-body gap-4">
+          <h2 class="card-title text-base">Hypermedia form</h2>
+
+          <!-- hx-swap="morph" is htmx 4's morph swap: it patches the existing DOM
+               rather than replacing it, so focus and scroll survive the swap. -->
+          <form
+            class="flex gap-2"
+            hx-post="/htmx/greet"
+            hx-target="#greeting"
+            hx-swap="morph"
+          >
+            <input
+              class="input input-bordered flex-1"
+              type="text"
+              name="name"
+              placeholder="Your name"
+              autocomplete="off"
+            />
+            <button class="btn btn-primary" type="submit">Greet</button>
+          </form>
+
+          <div id="greeting" class="min-h-12"></div>
+        </div>
+      </section>
+
+      <!-- Scriptless disclosure: native <details>, no JS state to break on swap. -->
+      <details class="collapse-arrow collapse bg-base-100">
+        <summary class="collapse-title font-medium">
+          How this page is built
+        </summary>
+        <div class="collapse-content text-sm opacity-80">
+          <p>
+            Markup lives in <code>src/templates/*.html</code> and is imported as
+            text by Wrangler. The Worker fills <code>%placeholder%</code> tokens
+            — there is no bundler and no build step.
+          </p>
+        </div>
+      </details>
+    </main>
+  </body>
+</html>
