@@ -11,7 +11,7 @@ CLAUDE_SKILLS_DIR = ".claude/skills"
 # Node, not Bun. Cloudflare does not support Bun as Wrangler's host: `wrangler dev`
 # detects it and aborts with "Wrangler does not support the Bun runtime".
 # Wrangler itself requires Node >= 22 (hardcoded in its bin).
-node = "24"
+node = "24.19.0"
 aube = "latest"
 # Secrets. Supplies CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID from the macOS
 # keychain — see fnox.toml. Anything touching the Cloudflare API runs under
