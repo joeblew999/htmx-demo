@@ -16,7 +16,7 @@ aube = "2.2.17"
 # Secrets. Supplies CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID from the macOS
 # keychain — see fnox.toml. Anything touching the Cloudflare API runs under
 # `fnox exec --` so no token is ever written to a file or shell history.
-fnox = "latest"
+fnox = "1.36.0"
 # No `wrangler` here: mise would install it via the npm: backend, duplicating the
 # devDependency and drifting from the version in aube-lock.yaml. It is invoked as
 # `npx wrangler` from the tasks below.
